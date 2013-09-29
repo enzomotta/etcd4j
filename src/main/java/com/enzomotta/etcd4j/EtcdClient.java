@@ -6,9 +6,9 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.ParseException;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -66,7 +66,7 @@ public class EtcdClient {
 
     public EtcdResponse set(String key, String value, Integer ttl) {
 	return testAndSet(key, null, value, ttl);
-	
+
     }
 
     /**
@@ -81,7 +81,7 @@ public class EtcdClient {
 	    if (ttl != null) {
 		data.add(new BasicNameValuePair("ttl", Integer.toString(ttl)));
 	    }
-	    
+
 	    if (prevValue != null) {
 		data.add(new BasicNameValuePair("prevValue", prevValue));
 	    }
@@ -98,7 +98,7 @@ public class EtcdClient {
 	    return null;
 	}
     }
-    
+
     /**
      * Lists a dir
      */
@@ -112,25 +112,38 @@ public class EtcdClient {
     /**
      * Watches the given dir
      */
-    public Future<EtcdResponse> watch(String key) {
+    public EtcdResponse watch(String key) {
 	return watch(key, null);
     }
 
     /**
      * Watches the given dir
      */
-    public Future<EtcdResponse> watch(String key, Long index) {
-	URI uri = buildKeyUri("v1/watch", key, "");
+    public EtcdResponse watch(String key, Long index) {
 
+	URI uri = buildKeyUri("v1/watch", key, "");
 	HttpPost request = new HttpPost(uri);
-	// TODO implement
+	
+	try {
+	    List<BasicNameValuePair> data = new ArrayList<BasicNameValuePair>();
+	    data.add(new BasicNameValuePair("index", Long.toString(index)));
+	    UrlEncodedFormEntity entity = new UrlEncodedFormEntity(data, "UTF_8");
+	    request.setEntity(entity);
+	    return sendRequest(request);
+	} catch (ParseException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	} catch (IOException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	}
 	return null;
     }
 
-    private EtcdResponse sendRequest(HttpUriRequest httpRequest) { 
-	return (EtcdResponse)sendRequest(httpRequest, false);
+    private EtcdResponse sendRequest(HttpUriRequest httpRequest) {
+	return (EtcdResponse) sendRequest(httpRequest, false);
     }
-    
+
     private Object sendRequest(HttpUriRequest httpRequest, boolean isDir) {
 	CloseableHttpClient httpclient = HttpClients.createDefault();
 	CloseableHttpResponse response = null;
@@ -154,7 +167,8 @@ public class EtcdClient {
 	} finally {
 	    try {
 		response.close();
-	    } catch (IOException e) { }
+	    } catch (IOException e) {
+	    }
 	}
 	return response;
     }
